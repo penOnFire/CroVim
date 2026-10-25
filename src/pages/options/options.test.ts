@@ -1,0 +1,1 @@
+import {describe,it,expect} from 'vitest';import {validateDraft} from './settings-form';describe('settings',()=>it('validates',()=>expect(validateDraft({scrollStep:100,hintCharacters:'ab'})).toBe(true)));

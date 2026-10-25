@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>CroVim Options</title>
+  </head>
+  <body>
+    <main class="shell">
+      <header class="hero">
+        <div class="brand-mark" aria-hidden="true">⌘</div>
+        <div>
+          <p class="eyebrow">CroVim / preferences</p>
+          <h1>CroVim Options</h1>
+          <p class="lede">Shape the keyboard-first way you move through the web.</p>
+        </div>
+      </header>
+      <form id="settings">
+        <section class="panel">
+          <div class="section-heading"><h2>Movement</h2><p>Make scrolling feel like an extension of your hands.</p></div>
+          <div class="field-grid">
+            <label class="field"><span>Scroll step</span><small>Pixels per j / k press</small><input name="scrollStep" type="number" min="10" max="2000" step="10" inputmode="numeric"></label>
+            <label class="toggle"><input name="smoothScroll" type="checkbox"><span><strong>Smooth scrolling</strong><small>Ease between positions instead of jumping.</small></span></label>
+          </div>
+        </section>
+        <section class="panel">
+          <div class="section-heading"><h2>Hints &amp; find</h2><p>Control how CroVim labels links and searches text.</p></div>
+          <div class="field-grid">
+            <label class="field"><span>Hint characters</span><small>Unique characters used for link labels</small><input name="hintCharacters" autocomplete="off" spellcheck="false"></label>
+            <label class="field"><span>Hint mode</span><small>Choose how labels are generated</small><select name="hintMode"><option value="alphabet">Alphabet</option><option value="filtered">Filtered</option></select></label>
+            <label class="toggle"><input name="findRegex" type="checkbox"><span><strong>Regular expression find</strong><small>Use patterns in the / find bar.</small></span></label>
+            <label class="toggle"><input name="findSmartCase" type="checkbox"><span><strong>Smart case</strong><small>Match case only when your query uses capitals.</small></span></label>
+          </div>
+        </section>
+        <section class="panel">
+          <div class="section-heading"><h2>Appearance</h2><p>Keep the interface quiet, or give it a darker room.</p></div>
+          <label class="field compact"><span>Theme</span><select name="theme"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label>
+        </section>
+        <section class="panel">
+          <div class="section-heading"><h2>Commands</h2><p>One mapping per line: <code>key=command</code>.</p></div>
+          <label class="field"><span>Key mappings</span><textarea name="keyMappings" rows="8" spellcheck="false"></textarea></label>
+          <label class="field"><span>Excluded patterns</span><small>URL patterns where CroVim stays out of the way</small><textarea name="excludedPatterns" rows="4" placeholder="https://mail.example/*"></textarea></label>
+        </section>
+        <section class="panel">
+          <div class="section-heading"><h2>Search engines</h2><p>One per line: <code>keyword=url|name</code>. Use <code>%s</code> for the query.</p></div>
+          <label class="field"><span>Search engines</span><textarea name="searchEngines" rows="5" spellcheck="false" placeholder="g=https://www.google.com/search?q=%s|Google"></textarea></label>
+        </section>
+        <footer class="actions"><output aria-live="polite"></output><button type="button" class="quiet" id="reset">Reset defaults</button><button type="submit">Save</button></footer>
+      </form>
+    </main>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

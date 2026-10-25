@@ -1,0 +1,1 @@
+export const markKey=(key:string)=>`crovimMark|${location.href.split('#')[0]}|${key}`;export function setLocal(key:string){localStorage.setItem(markKey(key),JSON.stringify({scrollX:scrollX,scrollY:scrollY,hash:location.hash}))}export function getLocal(key:string){try{return JSON.parse(localStorage.getItem(markKey(key))??'null')}catch{return null}}

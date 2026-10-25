@@ -1,0 +1,10 @@
+node_modules/
+dist/
+tests/.profile/
+playwright-report/
+test-results/
+tests/manual-profile*
+.agents/
+.github/skills/
+brag-output/composition/.hyperframes/
+brag-output/composition/assets/

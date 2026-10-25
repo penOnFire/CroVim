@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="en">
+  <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>CroVim Vomnibar</title></head>
+  <body>
+    <main class="vomnibar">
+      <header><div class="brand"><span>⌘</span><strong>Vomnibar</strong></div><kbd>ESC</kbd></header>
+      <div class="search-shell"><span class="search-icon" aria-hidden="true">/</span><input id="query" autofocus autocomplete="off" spellcheck="false" placeholder="Search tabs, history, bookmarks, or the web" aria-label="Search"></div>
+      <p class="hint">↑ ↓ navigate <span>↵ open</span> <span>shift ↵ new tab</span></p>
+      <ul id="results" role="listbox" aria-label="Search results"></ul>
+    </main>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

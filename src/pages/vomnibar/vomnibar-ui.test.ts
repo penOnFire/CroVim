@@ -1,0 +1,1 @@
+import {describe,it,expect} from 'vitest';import {selected} from './vomnibar-ui';describe('selection',()=>it('selects',()=>{const a=document.createElement('div'),b=document.createElement('div');expect(selected([a,b],1)).toBe(b)}));

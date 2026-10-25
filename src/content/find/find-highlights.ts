@@ -1,0 +1,1 @@
+export function findText(query:string,root:Node=document.body){if(!query)return null;const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let n;while(n=w.nextNode())if(n.textContent?.toLowerCase().includes(query.toLowerCase()))return n;return null;}
