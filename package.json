@@ -12,14 +12,18 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "npm run build && playwright test",
-    "test:all": "npm run typecheck && npm run lint && npm test && npm run test:e2e",
+    "test:all": "npm run typecheck && npm run lint && npm test && npm run test:e2e && npm run lint:firefox && npm run test:firefox",
     "clean": "node scripts/clean-dist.mjs",
-    "validate:dist": "node scripts/validate-dist.mjs"
+    "validate:dist": "node scripts/validate-dist.mjs",
+    "generate:icons": "node scripts/generate-icons.mjs",
+    "lint:firefox": "web-ext lint --source-dir dist",
+    "test:firefox": "npm run build && node scripts/test-firefox-load.mjs",
+    "package": "npm run build && web-ext build --source-dir dist --artifacts-dir web-ext-artifacts --overwrite-dest"
   },
   "dependencies": {
+    "@playwright/test": "^1.49.0",
     "@types/chrome": "^0.0.270",
     "@types/node": "^22.0.0",
-    "@playwright/test": "^1.49.0",
     "esbuild": "^0.24.0",
     "jsdom": "^25.0.0",
     "typescript": "^5.7.0",
@@ -27,8 +31,9 @@
     "vitest": "^2.1.0"
   },
   "devDependencies": {
-    "eslint": "^9.0.0",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
-    "@typescript-eslint/parser": "^8.0.0"
+    "@typescript-eslint/parser": "^8.0.0",
+    "eslint": "^9.0.0",
+    "web-ext": "^8.10.0"
   }
 }

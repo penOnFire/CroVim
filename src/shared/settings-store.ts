@@ -5,11 +5,11 @@ import type { Settings } from './types';
 const key = 'settings';
 
 export async function loadSettings(): Promise<Settings> {
-  if (typeof chrome === 'undefined') return defaults();
+  if (typeof chrome === 'undefined' || !chrome.storage) return defaults();
   const [managed, sync, local] = await Promise.all([
-    chrome.storage.managed.get(key).catch(() => ({})),
-    chrome.storage.sync.get(key),
-    chrome.storage.local.get(key),
+    chrome.storage.managed?.get(key).catch(() => ({})) ?? Promise.resolve({}),
+    chrome.storage.sync?.get(key).catch(() => ({})) ?? Promise.resolve({}),
+    chrome.storage.local?.get(key).catch(() => ({})) ?? Promise.resolve({}),
   ]);
   const source = (managed as Record<string, unknown>)[key] ?? (sync as Record<string, unknown>)[key] ?? (local as Record<string, unknown>)[key];
   return migrateSettings(source);
@@ -18,13 +18,25 @@ export async function loadSettings(): Promise<Settings> {
 export async function saveSettings(patch: Partial<Settings>): Promise<Settings> {
   const next = normalizeSettings({ ...(await loadSettings()), ...patch });
   assertValidSettings(next);
-  await chrome.storage.sync.set({ [key]: next });
+  if (typeof chrome !== 'undefined' && chrome.storage) {
+    try {
+      await (chrome.storage.sync ?? chrome.storage.local).set({ [key]: next });
+    } catch {
+      await chrome.storage.local?.set({ [key]: next });
+    }
+  }
   return next;
 }
 
 export async function resetSettings(): Promise<Settings> {
   const next = defaults();
-  await chrome.storage.sync.set({ [key]: next });
+  if (typeof chrome !== 'undefined' && chrome.storage) {
+    try {
+      await (chrome.storage.sync ?? chrome.storage.local).set({ [key]: next });
+    } catch {
+      await chrome.storage.local?.set({ [key]: next });
+    }
+  }
   return next;
 }
 
