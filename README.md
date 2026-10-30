@@ -23,14 +23,16 @@ These are the default mappings in `src/shared/settings-schema.ts`. Sequences are
 
 | Keys | Action |
 | --- | --- |
-| `j` / `k` | Scroll down / up. Deltas accumulate into a smooth animation, and holding the key repeats the motion. |
+| `j` / `k` | Scroll down / up. Deltas accumulate into a smooth animation, and holding the key repeats the motion. Automatically targets the container under the mouse pointer or deeply focused element. |
 | `h` / `l` | Scroll left / right with the same additive, repeatable scrolling behavior. |
 | `d` / `u` | Scroll down / up by half the viewport height. |
 | `gg` / `G` | Scroll the current scroll target to the top / bottom. |
 | `zH` / `zL` | Scroll the current scroll target to the left / right edge. |
-| `F` (`Shift+F`) | Open link hints; selecting a candidate activates it in the current tab. Lowercase `f` is unbound. |
+| `s` / `gs` | Select a specific scroll container (div, panel, section, sidebar, or window) on multi-pane pages. Hints appear over all scrollable elements; typing a hint locks scrolling to that container with a visual outline indicator. |
+| `F` (`Shift+F`) | Open link hints; selecting a candidate activates it in the current tab. Supports complex interactive controls, social reaction docks (e.g. Facebook Like/Love/Haha), modal buttons, and links. Lowercase `f` is unbound. |
 | `gf` | Open link hints; selecting a link opens it in a new tab. Other hinted controls are activated on the current page. |
 | `yf` | Open link hints; selecting a link copies its URL. |
+| `gh` | Hover hint. Triggers realistic pointer/mouse hover on an element (e.g. hovering over the Facebook Like button to reveal the reaction dock, or preview popups) without clicking. |
 | `/` | Open in-page find. Type a query, press Enter to finish, or Escape to cancel. |
 | `n` / `N` | Move to the next / previous find match. Find wraps at either end. |
 | `o` | Open the Vomnibar for tabs, history, bookmarks, or web search. Selecting a result opens it in the current tab; Shift+Enter opens it in a background tab. |

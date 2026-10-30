@@ -7,6 +7,7 @@ import { dispatcher } from './command-dispatcher';
 import { HudComponent } from './hud-component';
 import { UiRoot } from './ui-root';
 import { LinkHintsMode } from './link-hints/link-hints-mode';
+import { discoverScrollable } from './link-hints/hint-discovery';
 import { FindMode } from './find/find-mode';
 import { showHelp } from './help-dialog';
 import { openVomnibar } from './vomnibar/vomnibar-overlay';
@@ -49,13 +50,56 @@ if (win.__CROVIM_INITIALIZED__) {
       hud.show('Insert mode');
     }, { signal });
     bus.addEventListener('crovim:hints', (event) => {
-      const mode = (event as CustomEvent<{ mode?: 'currTab' | 'newTab' | 'yank' }>).detail?.mode ?? 'currTab';
+      const mode = (event as CustomEvent<{ mode?: 'currTab' | 'newTab' | 'yank' | 'hover' }>).detail?.mode ?? 'currTab';
       modes.enter('link-hints');
       const hints = new LinkHintsMode(ui.shadow, settings.hintCharacters, mode, () => {
         if (modes.mode === 'link-hints') modes.exit();
       });
       modes.onCleanup('link-hints', () => hints.close());
     }, { signal });
+    bus.addEventListener('crovim:select-scroll', () => {
+      const scrollables = discoverScrollable();
+      if (scrollables.length === 0) {
+        hud.show('No scrollable containers found');
+        return;
+      }
+      modes.enter('link-hints');
+      const hints = new LinkHintsMode(
+        ui.shadow,
+        settings.hintCharacters,
+        'currTab',
+        () => {
+          if (modes.mode === 'link-hints') modes.exit();
+        },
+        scrollables,
+        (selectedEl) => {
+          if (modes.mode === 'link-hints') modes.exit();
+          const target = (selectedEl === document.documentElement || selectedEl === document.body) ? window : selectedEl;
+          scroller.setExplicitTarget(target);
+          if (target instanceof HTMLElement) {
+            const prevOutline = target.style.outline;
+            const prevTransition = target.style.transition;
+            target.style.transition = 'outline 0.2s ease';
+            target.style.outline = '3px solid #22c55e';
+            setTimeout(() => {
+              target.style.outline = prevOutline;
+              target.style.transition = prevTransition;
+            }, 1200);
+            const name = target.getAttribute('aria-label')
+              || target.id
+              || target.className.toString().split(' ')[0]
+              || target.tagName.toLowerCase();
+            hud.show(`Scroll target: <${name}>`);
+          } else {
+            hud.show('Scroll target: Window');
+          }
+        },
+      );
+      modes.onCleanup('link-hints', () => hints.close());
+    }, { signal });
+    window.addEventListener('pointermove', (event) => {
+      scroller.setLastPointer(event.clientX, event.clientY);
+    }, { signal, passive: true });
     bus.addEventListener('crovim:find', () => {
       modes.enter('find');
       modes.onCleanup('find', () => hud.closeFind());

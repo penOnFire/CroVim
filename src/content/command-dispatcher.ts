@@ -34,9 +34,11 @@ export function dispatcher(scroll: SmoothScroller, bus: EventTarget = document) 
       case 'find': bus.dispatchEvent(new CustomEvent('crovim:find')); break;
       case 'findNext': bus.dispatchEvent(new CustomEvent('crovim:find-next')); break;
       case 'findPrevious': bus.dispatchEvent(new CustomEvent('crovim:find-previous')); break;
+      case 'selectScroll': bus.dispatchEvent(new CustomEvent('crovim:select-scroll')); break;
       case 'enterHints': bus.dispatchEvent(new CustomEvent('crovim:hints', { detail: { mode: 'currTab' } })); break;
       case 'enterHintsNewTab': bus.dispatchEvent(new CustomEvent('crovim:hints', { detail: { mode: 'newTab' } })); break;
       case 'yankHint': bus.dispatchEvent(new CustomEvent('crovim:hints', { detail: { mode: 'yank' } })); break;
+      case 'hoverHint': bus.dispatchEvent(new CustomEvent('crovim:hints', { detail: { mode: 'hover' } })); break;
       case 'visual': bus.dispatchEvent(new CustomEvent('crovim:visual')); break;
       case 'visualLine': bus.dispatchEvent(new CustomEvent('crovim:visual-line')); break;
       case 'insert': bus.dispatchEvent(new CustomEvent('crovim:insert')); break;

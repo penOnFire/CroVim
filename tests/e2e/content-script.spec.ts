@@ -135,3 +135,155 @@ test('content script detects modal controls and clicks buttons inside modal dial
   // Verify modal backdrop was removed
   await expect(page.locator('#test-modal-backdrop')).toHaveCount(0);
 });
+
+test('selects explicit scroll containers and activates social reaction flyouts', async ({ context }) => {
+  const page = await context.newPage();
+  await page.goto('/rich.html');
+  await page.waitForTimeout(300);
+
+  // Setup multi-panel scroll layout and a Facebook-style reactions dock
+  await page.evaluate(() => {
+    const container = document.createElement('div');
+    container.id = 'e2e-multi-panel-fixture';
+    container.style.cssText = 'position:fixed;top:0;left:0;right:0;height:400px;background:#fff;z-index:9000;display:flex;gap:20px;padding:10px;box-sizing:border-box;';
+    container.innerHTML = `
+      <div id="side-panel" style="width:200px;height:350px;overflow-y:auto;background:#eee;border:1px solid #ccc;">
+        <div style="height:1500px;padding:10px;">Sidebar tall content</div>
+      </div>
+      <div id="feed-panel" style="width:300px;height:350px;overflow-y:auto;background:#fafafa;border:1px solid #ccc;">
+        <div style="height:2500px;padding:10px;">
+          Feed tall content
+          <div id="fb-post" style="margin-top:20px;padding:10px;border:1px solid #ddd;">
+            <button id="fb-like-btn" aria-label="Like" style="padding:6px 12px;">Like</button>
+            <div id="fb-reaction-dock" role="toolbar" aria-label="Reactions" style="display:none;margin-top:10px;padding:6px;background:#333;border-radius:20px;">
+              <div role="button" aria-label="Like" id="fb-rx-like" style="display:inline-block;cursor:pointer;padding:4px 8px;color:#fff;">👍</div>
+              <div role="button" aria-label="Love" id="fb-rx-love" style="display:inline-block;cursor:pointer;padding:4px 8px;color:#fff;"><span id="fb-rx-love-icon">❤️</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.prepend(container);
+
+    // State tracking for reactions
+    (window as any).selectedReaction = null;
+    (window as any).reactionClicks = 0;
+
+    const likeBtn = document.getElementById('fb-like-btn')!;
+    const dock = document.getElementById('fb-reaction-dock')!;
+
+    // Hovering the like button reveals the dock
+    likeBtn.addEventListener('mouseover', () => { dock.style.display = 'inline-flex'; });
+    likeBtn.addEventListener('pointerover', () => { dock.style.display = 'inline-flex'; });
+
+    // Delegated click handler on document
+    document.addEventListener('click', (e) => {
+      const btn = (e.target as HTMLElement).closest('[role="button"]');
+      if (btn && (btn.id === 'fb-rx-like' || btn.id === 'fb-rx-love')) {
+        (window as any).reactionClicks++;
+        if ((window as any).selectedReaction === btn.id) {
+          (window as any).selectedReaction = null; // Toggle off if clicked again!
+        } else {
+          (window as any).selectedReaction = btn.id;
+        }
+      }
+    });
+  });
+
+  // 1. Test selecting explicit scroll container via 's'
+  await page.keyboard.press('s');
+  await page.waitForTimeout(200);
+
+  // Find hint for #side-panel
+  const sideHint = await page.evaluate(() => {
+    const root = document.getElementById('crovim-ui-root');
+    const shadow = root?.shadowRoot;
+    const side = document.getElementById('side-panel');
+    const r = side?.getBoundingClientRect();
+    if (!r) return null;
+    const items = Array.from(shadow?.querySelectorAll('.hint-label') ?? []);
+    for (const l of items) {
+      const top = parseFloat((l as HTMLElement).style.top);
+      const left = parseFloat((l as HTMLElement).style.left);
+      if (Math.abs(top - (r.top + 8)) < 15 && Math.abs(left - (r.left + 8)) < 15) {
+        return l.textContent?.trim();
+      }
+    }
+    return null;
+  });
+
+  expect(sideHint).toBeTruthy();
+  await page.keyboard.type(sideHint!);
+  await page.waitForTimeout(100);
+
+  // Scroll down multiple times
+  await page.keyboard.press('j');
+  await page.keyboard.press('j');
+  await page.keyboard.press('j');
+  await page.waitForTimeout(300);
+
+  const scrollPositions = await page.evaluate(() => ({
+    sideTop: document.getElementById('side-panel')?.scrollTop ?? 0,
+    feedTop: document.getElementById('feed-panel')?.scrollTop ?? 0,
+  }));
+
+  expect(scrollPositions.sideTop).toBeGreaterThan(0);
+  expect(scrollPositions.feedTop).toBe(0);
+
+  // 2. Test hover hint 'gh' to reveal Facebook reaction dock
+  await page.keyboard.press('g');
+  await page.keyboard.press('h');
+  await page.waitForTimeout(200);
+
+  const likeHint = await page.evaluate(() => {
+    const root = document.getElementById('crovim-ui-root');
+    const shadow = root?.shadowRoot;
+    const btn = document.getElementById('fb-like-btn');
+    const r = btn?.getBoundingClientRect();
+    if (!r) return null;
+    const items = Array.from(shadow?.querySelectorAll('.hint-label') ?? []);
+    for (const l of items) {
+      const top = parseFloat((l as HTMLElement).style.top);
+      const left = parseFloat((l as HTMLElement).style.left);
+      if (Math.abs(top - r.top) < 15 && Math.abs(left - r.left) < 15) {
+        return l.textContent?.trim();
+      }
+    }
+    return null;
+  });
+
+  expect(likeHint).toBeTruthy();
+  await page.keyboard.type(likeHint!);
+  await page.waitForTimeout(200);
+
+  // Dock should now be visible
+  await expect(page.locator('#fb-reaction-dock')).toBeVisible();
+
+  // 3. Test clicking reaction 'fb-rx-love' via Shift+F
+  await page.keyboard.press('Shift+F');
+  await page.waitForTimeout(200);
+
+  const loveHint = await page.evaluate(() => {
+    const root = document.getElementById('crovim-ui-root');
+    const shadow = root?.shadowRoot;
+    const love = document.getElementById('fb-rx-love');
+    const r = love?.getBoundingClientRect();
+    if (!r) return null;
+    const items = Array.from(shadow?.querySelectorAll('.hint-label') ?? []);
+    for (const l of items) {
+      const top = parseFloat((l as HTMLElement).style.top);
+      const left = parseFloat((l as HTMLElement).style.left);
+      if (Math.abs(top - r.top) < 15 && Math.abs(left - r.left) < 15) {
+        return l.textContent?.trim();
+      }
+    }
+    return null;
+  });
+
+  expect(loveHint).toBeTruthy();
+  await page.keyboard.type(loveHint!);
+
+  // Verify 'fb-rx-love' was selected and click count is exactly 1 (not toggled off by duplicate click)
+  await expect.poll(() => page.evaluate(() => (window as any).selectedReaction)).toBe('fb-rx-love');
+  await expect.poll(() => page.evaluate(() => (window as any).reactionClicks)).toBe(1);
+});

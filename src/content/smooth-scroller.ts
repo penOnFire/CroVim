@@ -8,8 +8,24 @@ export class SmoothScroller {
   private rafId = 0;
   private lastTime = 0;
   private activeTarget: Element | Window = window;
+  private explicitTarget: Element | Window | null = null;
+  private lastPointer: { x: number; y: number } | null = null;
 
   constructor(private smooth = true) {}
+
+  setExplicitTarget(target: Element | Window | null): void {
+    this.cancelAnimation();
+    this.explicitTarget = target;
+    if (target) this.activeTarget = target;
+  }
+
+  getExplicitTarget(): Element | Window | null {
+    return this.explicitTarget;
+  }
+
+  setLastPointer(x: number, y: number): void {
+    this.lastPointer = { x, y };
+  }
 
   private canScrollElement(element: Element, dx: number, dy: number): boolean {
     if (element.id === 'crovim-ui-root') return false;
@@ -55,9 +71,22 @@ export class SmoothScroller {
   }
 
   private findTarget(dx = 0, dy = 0): Element | Window {
+    if (this.explicitTarget) {
+      if (this.explicitTarget === window) return window;
+      if (this.explicitTarget instanceof Element && this.explicitTarget.isConnected) {
+        return this.explicitTarget;
+      }
+      this.explicitTarget = null;
+    }
+
     const active = getDeepActiveElement();
-    const hovered = document.elementFromPoint(innerWidth / 2, innerHeight / 2);
-    const starts = [active, hovered].filter(
+    const pointerEl = this.lastPointer && typeof document.elementFromPoint === 'function'
+      ? document.elementFromPoint(this.lastPointer.x, this.lastPointer.y)
+      : null;
+    const hovered = typeof document.elementFromPoint === 'function'
+      ? document.elementFromPoint(innerWidth / 2, innerHeight / 2)
+      : null;
+    const starts = [pointerEl, active, hovered].filter(
       (el): el is Element => !!el && el !== document.body && el !== document.documentElement,
     );
     for (const start of starts) {
