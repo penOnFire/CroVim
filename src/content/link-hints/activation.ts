@@ -62,8 +62,8 @@ export function activate(el: Element, mode: 'currTab' | 'newTab' | 'yank' | 'hov
   const hitTarget = hasValidRect && typeof document.elementFromPoint === 'function' ? document.elementFromPoint(clientX, clientY) : null;
   const dispatchTarget = (hitTarget && target.contains(hitTarget)) ? hitTarget : target;
 
-  // 1. Move/Enter sequence so React/Facebook and complex web apps register pointer presence
-  for (const type of ['pointerover', 'mouseover', 'pointerenter', 'mouseenter', 'pointermove']) {
+  // 1. Move/Over bubbling sequence
+  for (const type of ['pointerover', 'mouseover', 'pointermove']) {
     if (type.startsWith('pointer') && !hasPointer) continue;
     const event = type.startsWith('pointer')
       ? new PointerEvent(type, { ...mouseInit, detail: 0, buttons: 0, pointerId: 1, pointerType: 'mouse', isPrimary: true })
@@ -71,7 +71,34 @@ export function activate(el: Element, mode: 'currTab' | 'newTab' | 'yank' | 'hov
     dispatchTarget.dispatchEvent(event);
   }
 
-  if (mode === 'hover') return;
+  // Non-bubbling enter events: dispatch along the chain so target and wrappers receive them
+  const enterTargets = new Set([dispatchTarget, target, el].filter((t): t is Element => !!t));
+  for (const type of ['pointerenter', 'mouseenter']) {
+    if (type.startsWith('pointer') && !hasPointer) continue;
+    for (const t of enterTargets) {
+      const event = type.startsWith('pointer')
+        ? new PointerEvent(type, { ...mouseInit, bubbles: false, detail: 0, buttons: 0, pointerId: 1, pointerType: 'mouse', isPrimary: true })
+        : new MouseEvent(type, { ...mouseInit, bubbles: false, detail: 0, buttons: 0 });
+      t.dispatchEvent(event);
+    }
+  }
+
+  if (mode === 'hover') {
+    // Keep hover presence active for 400ms to satisfy delayed hover timers (like Facebook reactions)
+    let elapsed = 0;
+    const interval = setInterval(() => {
+      elapsed += 80;
+      if (elapsed > 400) {
+        clearInterval(interval);
+        return;
+      }
+      const moveEvent = hasPointer
+        ? new PointerEvent('pointermove', { ...mouseInit, detail: 0, buttons: 0, pointerId: 1, pointerType: 'mouse', isPrimary: true })
+        : new MouseEvent('pointermove', { ...mouseInit, detail: 0, buttons: 0 });
+      dispatchTarget.dispatchEvent(moveEvent);
+    }, 80);
+    return;
+  }
 
   // 2. Pointer & Mouse Down (buttons: 1)
   for (const type of ['pointerdown', 'mousedown']) {

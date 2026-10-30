@@ -26,9 +26,9 @@ describe('command trie', () => {
   });
 
   it('rejects unknown sequences and exposes exact mappings', () => {
-    expect(trie.match(['q'])).toEqual({ prefix: false, consumed: [] });
-    expect(trie.match(['g', 'q'])).toEqual({ prefix: false, consumed: [] });
+    expect(trie.match(['w'])).toEqual({ prefix: false, consumed: [] });
+    expect(trie.match(['g', 'w'])).toEqual({ prefix: false, consumed: [] });
     expect(trie.has('gg')).toBe(true);
-    expect(trie.has('gq')).toBe(false);
+    expect(trie.has('gw')).toBe(false);
   });
 });

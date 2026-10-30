@@ -7,6 +7,7 @@ import { dispatcher } from './command-dispatcher';
 import { HudComponent } from './hud-component';
 import { UiRoot } from './ui-root';
 import { LinkHintsMode } from './link-hints/link-hints-mode';
+import { activate } from './link-hints/activation';
 import { discoverScrollable } from './link-hints/hint-discovery';
 import { FindMode } from './find/find-mode';
 import { showHelp } from './help-dialog';
@@ -51,10 +52,26 @@ if (win.__CROVIM_INITIALIZED__) {
     }, { signal });
     bus.addEventListener('crovim:hints', (event) => {
       const mode = (event as CustomEvent<{ mode?: 'currTab' | 'newTab' | 'yank' | 'hover' }>).detail?.mode ?? 'currTab';
+      if (mode === 'hover') {
+        hud.show('Hover mode: select element to hover');
+      }
       modes.enter('link-hints');
-      const hints = new LinkHintsMode(ui.shadow, settings.hintCharacters, mode, () => {
-        if (modes.mode === 'link-hints') modes.exit();
-      });
+      const hints = new LinkHintsMode(
+        ui.shadow,
+        settings.hintCharacters,
+        mode,
+        () => {
+          if (modes.mode === 'link-hints') modes.exit();
+        },
+        undefined,
+        mode === 'hover'
+          ? (target) => {
+              if (modes.mode === 'link-hints') modes.exit();
+              activate(target, 'hover');
+              hud.show('Hovered — press Shift+F to select reaction');
+            }
+          : undefined,
+      );
       modes.onCleanup('link-hints', () => hints.close());
     }, { signal });
     bus.addEventListener('crovim:select-scroll', () => {

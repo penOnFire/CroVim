@@ -6,7 +6,7 @@ const mappings: Record<string, string> = {
   d: 'halfPageDown', u: 'halfPageUp', gg: 'scrollTop', G: 'scrollBottom',
   zH: 'scrollLeftEdge', zL: 'scrollRightEdge',
   s: 'selectScroll', gs: 'selectScroll',
-  F: 'enterHints', gf: 'enterHintsNewTab', yf: 'yankHint', gh: 'hoverHint', '/': 'find',
+  F: 'enterHints', gf: 'enterHintsNewTab', yf: 'yankHint', gh: 'hoverHint', q: 'hoverHint', '/': 'find',
   n: 'findNext', N: 'findPrevious', v: 'visual', V: 'visualLine',
   i: 'insert', m: 'setMark', '`': 'gotoMark', "'": 'gotoMark', o: 'vomnibar',
   O: 'vomnibarCurrent', t: 'newTab', T: 'newTabBackground',

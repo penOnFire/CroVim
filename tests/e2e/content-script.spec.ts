@@ -230,9 +230,8 @@ test('selects explicit scroll containers and activates social reaction flyouts',
   expect(scrollPositions.sideTop).toBeGreaterThan(0);
   expect(scrollPositions.feedTop).toBe(0);
 
-  // 2. Test hover hint 'gh' to reveal Facebook reaction dock
-  await page.keyboard.press('g');
-  await page.keyboard.press('h');
+  // 2. Test hover hint 'q' (or 'gh') to reveal Facebook reaction dock
+  await page.keyboard.press('q');
   await page.waitForTimeout(200);
 
   const likeHint = await page.evaluate(() => {
