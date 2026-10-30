@@ -1,6 +1,6 @@
 import { walkOpen, visible } from '../dom-utils';
 export interface Candidate { element: Element; rect: DOMRect; text: string; reason: string }
-const selector = 'a[href],a[role="link"],button,input:not([type="hidden"]),textarea,select,summary,[role="button"],[role="link"],[role="checkbox"],[role="tab"],[role="menuitem"],[role="menuitemcheckbox"],[role="menuitemradio"],[role="option"],[role="switch"],[role="radio"],[role="textbox"],[role="searchbox"],[role="combobox"],[contenteditable="true"],[contenteditable=""],[contenteditable="plaintext-only"],[tabindex]:not([tabindex="-1"]),[onclick],[jsaction],label';
+const selector = 'a[href],a[role="link"],button,input:not([type="hidden"]),textarea,select,summary,[role="button"],[role="link"],[role="checkbox"],[role="tab"],[role="menuitem"],[role="menuitemcheckbox"],[role="menuitemradio"],[role="option"],[role="switch"],[role="radio"],[role="textbox"],[role="searchbox"],[role="combobox"],[contenteditable="true"],[contenteditable=""],[contenteditable="plaintext-only"],[tabindex]:not([tabindex="-1"]),[onclick],[jsaction],label,[data-dismiss="modal"],[data-bs-dismiss="modal"],[data-dismiss],[data-bs-dismiss],[aria-label*="close" i],[aria-label*="dismiss" i]';
 
 function topmostAtPoint(x: number, y: number): Element | null {
   let element = document.elementFromPoint(x, y);
@@ -44,7 +44,6 @@ function isUnoccluded(element: Element, rect: DOMRect): boolean {
     if (belongsTo(point, element) || belongsTo(element, point)) return true;
     const sharedInteractive = point.closest('a,button,[role="button"],[role="link"],label,ytd-thumbnail,ytd-rich-item-renderer,ytd-video-renderer,ytd-compact-video-renderer,article,[role="article"]');
     if (sharedInteractive && sharedInteractive.contains(element)) return true;
-    if (element.parentElement && element.parentElement.contains(point)) return true;
   }
   return false;
 }

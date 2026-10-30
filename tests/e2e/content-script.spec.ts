@@ -51,3 +51,87 @@ test('content script exposes hints, help, find, text input Escape, and scrolling
   await page.keyboard.press('j');
   await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(0);
 });
+
+test('content script detects modal controls and clicks buttons inside modal dialogs', async ({ context }) => {
+  const page = await context.newPage();
+  await page.goto('/rich.html');
+  await page.waitForTimeout(250);
+
+  // Inject a modal dialog with action button and SVG close button
+  await page.evaluate(() => {
+    const backdrop = document.createElement('div');
+    backdrop.id = 'test-modal-backdrop';
+    backdrop.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99999;display:flex;align-items:center;justify-content:center;';
+    backdrop.innerHTML = `
+      <div id="test-modal" role="dialog" aria-modal="true" style="background:#fff;padding:24px;border-radius:8px;z-index:100000;min-width:300px;">
+        <button id="modal-close-btn" style="float:right;">
+          <svg id="modal-close-svg" viewBox="0 0 24 24" width="16" height="16"><path id="modal-close-path" d="M0 0 L16 16"/></svg>
+        </button>
+        <h3>Modal Dialog</h3>
+        <button id="modal-confirm-btn">Confirm Modal Action</button>
+      </div>
+    `;
+    document.body.appendChild(backdrop);
+    (window as any).modalConfirmed = false;
+    document.getElementById('modal-confirm-btn')?.addEventListener('click', () => {
+      (window as any).modalConfirmed = true;
+    });
+    document.getElementById('modal-close-btn')?.addEventListener('click', () => {
+      backdrop.remove();
+    });
+  });
+
+  // Activate hints
+  await page.keyboard.press('Shift+F');
+  const labels = page.locator('#crovim-ui-root').locator('.hint-label');
+  await expect(labels).not.toHaveCount(0);
+
+  // Find the hint for modal-confirm-btn
+  const confirmHint = await page.evaluate(() => {
+    const root = document.getElementById('crovim-ui-root');
+    const shadow = root?.shadowRoot;
+    const confirmBtn = document.getElementById('modal-confirm-btn');
+    const r = confirmBtn?.getBoundingClientRect();
+    if (!r) return null;
+    const items = Array.from(shadow?.querySelectorAll('.hint-label') ?? []);
+    for (const l of items) {
+      const top = parseFloat((l as HTMLElement).style.top);
+      const left = parseFloat((l as HTMLElement).style.left);
+      if (Math.abs(top - r.top) < 10 && Math.abs(left - r.left) < 10) {
+        return l.textContent?.trim();
+      }
+    }
+    return null;
+  });
+
+  expect(confirmHint).toBeTruthy();
+  await page.keyboard.type(confirmHint!);
+
+  // Verify modal action fired
+  await expect.poll(() => page.evaluate(() => (window as any).modalConfirmed)).toBe(true);
+
+  // Now test closing the modal via close button hint
+  await page.keyboard.press('Shift+F');
+  const closeHint = await page.evaluate(() => {
+    const root = document.getElementById('crovim-ui-root');
+    const shadow = root?.shadowRoot;
+    const closeBtn = document.getElementById('modal-close-btn');
+    const r = closeBtn?.getBoundingClientRect();
+    if (!r) return null;
+    const items = Array.from(shadow?.querySelectorAll('.hint-label') ?? []);
+    for (const l of items) {
+      const top = parseFloat((l as HTMLElement).style.top);
+      const left = parseFloat((l as HTMLElement).style.left);
+      if (Math.abs(top - r.top) < 10 && Math.abs(left - r.left) < 10) {
+        return l.textContent?.trim();
+      }
+    }
+    return null;
+  });
+
+  expect(closeHint).toBeTruthy();
+  await page.keyboard.type(closeHint!);
+
+  // Verify modal backdrop was removed
+  await expect(page.locator('#test-modal-backdrop')).toHaveCount(0);
+});
