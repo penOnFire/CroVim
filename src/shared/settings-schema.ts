@@ -5,7 +5,7 @@ const mappings: Record<string, string> = {
   j: 'scrollDown', k: 'scrollUp', h: 'scrollLeft', l: 'scrollRight',
   d: 'halfPageDown', u: 'halfPageUp', gg: 'scrollTop', G: 'scrollBottom',
   zH: 'scrollLeftEdge', zL: 'scrollRightEdge',
-  s: 'selectScroll', gs: 'selectScroll',
+  S: 'selectScroll',
   F: 'enterHints', gf: 'enterHintsNewTab', yf: 'yankHint', gh: 'hoverHint', Q: 'hoverHint', '/': 'find',
   n: 'findNext', N: 'findPrevious', v: 'visual', V: 'visualLine',
   i: 'insert', m: 'setMark', '`': 'gotoMark', "'": 'gotoMark', o: 'vomnibar',
@@ -56,6 +56,12 @@ export function normalizeSettings(input: unknown): Settings {
   }
   if (customMappings.q === 'hoverHint') {
     delete customMappings.q;
+  }
+  if (customMappings.s === 'selectScroll') {
+    delete customMappings.s;
+  }
+  if (customMappings.gs === 'selectScroll') {
+    delete customMappings.gs;
   }
   return {
     ...d, ...x, schemaVersion: 1,

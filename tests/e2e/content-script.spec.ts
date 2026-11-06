@@ -213,8 +213,22 @@ test('selects explicit scroll containers and activates social reaction flyouts',
     });
   });
 
-  // 1. Test selecting explicit scroll container via 's'
+  // 0. Verify j does NOT scroll on landing
+  await page.keyboard.press('j');
+  await page.keyboard.press('j');
+  const initialPositions = await page.evaluate(() => ({
+    sideTop: document.getElementById('side-panel')?.scrollTop ?? 0,
+    feedTop: document.getElementById('feed-panel')?.scrollTop ?? 0,
+  }));
+  expect(initialPositions.sideTop).toBe(0);
+  expect(initialPositions.feedTop).toBe(0);
+
+  // 1. Lowercase 's' alone should NOT trigger scroll hints
   await page.keyboard.press('s');
+  await expect(page.locator('#crovim-ui-root').locator('.hint-label')).toHaveCount(0);
+
+  // Press Shift+S to open hints for scroll containers
+  await page.keyboard.press('Shift+S');
   await page.waitForTimeout(200);
 
   // Find hint for #side-panel
@@ -239,7 +253,16 @@ test('selects explicit scroll containers and activates social reaction flyouts',
   await page.keyboard.type(sideHint!);
   await page.waitForTimeout(100);
 
-  // Scroll down multiple times
+  // Verify HUD shows scroll target and active scroll keys
+  const hudText = await page.evaluate(() => {
+    const root = document.getElementById('crovim-ui-root');
+    const shadow = root?.shadowRoot;
+    return shadow?.querySelector('.hud, #hud')?.textContent ?? '';
+  });
+  expect(hudText).toContain('Scroll target: <side-panel>');
+  expect(hudText).toContain('scrolling active: j/k/d/u/gg/G, Esc to exit');
+
+  // Scroll down multiple times in scroll mode
   await page.keyboard.press('j');
   await page.keyboard.press('j');
   await page.keyboard.press('j');
@@ -252,6 +275,19 @@ test('selects explicit scroll containers and activates social reaction flyouts',
 
   expect(scrollPositions.sideTop).toBeGreaterThan(0);
   expect(scrollPositions.feedTop).toBe(0);
+
+  // Press Escape and verify scroll mode exits and scrolling stops
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(100);
+
+  const prevSideTop = scrollPositions.sideTop;
+  await page.keyboard.press('j');
+  await page.keyboard.press('j');
+  await page.waitForTimeout(200);
+  const afterEscapePositions = await page.evaluate(() => ({
+    sideTop: document.getElementById('side-panel')?.scrollTop ?? 0,
+  }));
+  expect(afterEscapePositions.sideTop).toBe(prevSideTop);
 
   // 2. Test hover hint 'Shift+Q' (or 'gh') to reveal Facebook reaction dock
   await page.keyboard.press('Shift+Q');

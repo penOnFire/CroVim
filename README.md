@@ -8,7 +8,7 @@ CroVim targets a unified Manifest V3 specification compatible across both Chromi
 
 CroVim treats keyboard navigation as an additional way to use the browser, not as a replacement for browser controls:
 
-- **Minimal non-intercepting mode by default:** By default, CroVim runs in Minimal mode (`minimalMode: true`). It never intercepts single-key website shortcuts (`j`, `k`, `h`, `l`, `d`, `u`, `s`, `q`, numbers `1-9`, `/`, etc.), guaranteeing 100% compatibility with sites like GitHub, YouTube, Gmail, and Twitter/X. CroVim only activates on explicit chords: `Shift+F` (link hints) and `Shift+Q` (hover hints), while `Escape` blurs active editables. Users who want full Vim page motions can turn off Minimal mode in Options.
+- **Minimal non-intercepting mode by default:** By default, CroVim runs in Minimal mode (`minimalMode: true`). It never intercepts single-key website shortcuts (`j`, `k`, `h`, `l`, `d`, `u`, `s`, `q`, numbers `1-9`, `/`, etc.), guaranteeing 100% compatibility with sites like GitHub, YouTube, Gmail, and Twitter/X. CroVim only activates on explicit chords: `Shift+F` (link hints), `Shift+Q` (hover hints), and `Shift+S` (scroll container selection), while `Escape` blurs active editables or exits scroll mode. Users who want full Vim page motions can turn off Minimal mode in Options.
 - **Physical Shift & CapsLock isolation:** CapsLock state is isolated so CapsLock alone never activates uppercase commands (`F`, `Q`, `G`, etc.). CroVim checks physical modifier state, requiring physical `Shift` to trigger shifted actions.
 - **Cross-browser by design:** A single unified build runs smoothly on Firefox, Brave, Chrome, Edge, and Arc without platform forks.
 - **Vim-style motions:** When full navigation mode is enabled, use short keys and sequences to scroll, search, select links, and move between tabs.
@@ -25,12 +25,12 @@ These are the default mappings in `src/shared/settings-schema.ts`. Sequences are
 
 | Keys | Action |
 | --- | --- |
-| `j` / `k` | Scroll down / up. Deltas accumulate into a smooth animation, and holding the key repeats the motion. Automatically targets the container under the mouse pointer or deeply focused element. |
-| `h` / `l` | Scroll left / right with the same additive, repeatable scrolling behavior. |
-| `d` / `u` | Scroll down / up by half the viewport height. |
-| `gg` / `G` | Scroll the current scroll target to the top / bottom. |
-| `zH` / `zL` | Scroll the current scroll target to the left / right edge. |
-| `s` / `gs` | Select a specific scroll container (div, panel, section, sidebar, or window) on multi-pane pages. Hints appear over all scrollable elements; typing a hint locks scrolling to that container with a visual outline indicator. |
+| `j` / `k` | Scroll down / up. Inactive on initial page landing to protect website shortcuts; activated when a scroll container is selected via `Shift+S`. Deltas accumulate smoothly, and holding repeats. |
+| `h` / `l` | Scroll left / right when scroll mode is activated. |
+| `d` / `u` | Scroll down / up by half the viewport height when scroll mode is activated. |
+| `gg` / `G` | Scroll the current scroll target to the top / bottom when scroll mode is activated. |
+| `zH` / `zL` | Scroll the current scroll target to the left / right edge when scroll mode is activated. |
+| `S` (`Shift+S`) | Select a specific scroll container (div, panel, section, sidebar, or window) on multi-pane pages. Hints appear over all scrollable elements; typing a hint locks scrolling to that container, outlines it, and enters active scroll mode (`j`/`k`/`d`/`u`/`gg`/`G`). Press `Escape` to exit scroll mode. Lowercase `s` is unbound. |
 | `F` (`Shift+F`) | Open link hints; selecting a candidate activates it in the current tab. Supports complex interactive controls, social reaction docks (e.g. Facebook Like/Love/Haha), modal buttons, and links. Lowercase `f` is unbound. |
 | `gf` | Open link hints; selecting a link opens it in a new tab. Other hinted controls are activated on the current page. |
 | `yf` | Open link hints; selecting a link copies its URL. |

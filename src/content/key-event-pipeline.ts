@@ -3,6 +3,11 @@ import { CommandTrie } from './command-trie';
 import { ModeManager } from './mode-manager';
 
 const bareModifiers = new Set(['Shift', 'Control', 'Alt', 'Meta', 'CapsLock', 'OS']);
+export const SCROLL_COMMANDS = new Set([
+  'scrollDown', 'scrollUp', 'scrollLeft', 'scrollRight',
+  'halfPageDown', 'halfPageUp', 'scrollTop', 'scrollBottom',
+  'scrollLeftEdge', 'scrollRightEdge',
+]);
 const repeatableCommands = new Set([
   'scrollDown', 'scrollUp', 'scrollLeft', 'scrollRight',
   'halfPageDown', 'halfPageUp', 'findNext', 'findPrevious',
@@ -113,6 +118,8 @@ export class KeyEventPipeline {
       key = isShift ? 'F' : 'f';
     } else if (event.code === 'KeyQ' || key.toLowerCase() === 'q') {
       key = isShift ? 'Q' : 'q';
+    } else if (event.code === 'KeyS' || key.toLowerCase() === 's') {
+      key = isShift ? 'S' : 's';
     } else if (!isShift && /^[A-Z]$/u.test(key)) {
       key = key.toLowerCase();
     } else if (isShift && /^[a-z]$/u.test(key)) {
@@ -127,13 +134,17 @@ export class KeyEventPipeline {
         this.modes.exit();
         this.consume(event);
         this.bus.dispatchEvent(new CustomEvent('crovim:toast', { detail: 'Normal mode' }));
+      } else if (this.modes.mode === 'scroll') {
+        this.modes.exit();
+        this.consume(event);
+        this.bus.dispatchEvent(new CustomEvent('crovim:toast', { detail: 'Scroll mode exited' }));
       } else if (this.modes.mode !== 'normal') {
         this.modes.exit();
         this.consume(event);
       }
       return;
     }
-    if (this.modes.mode !== 'normal' || activeEditable) return;
+    if ((this.modes.mode !== 'normal' && this.modes.mode !== 'scroll') || activeEditable) return;
 
     if (this.minimalMode) {
       if (key === 'F') {
@@ -154,7 +165,16 @@ export class KeyEventPipeline {
         this.dispatch('hoverHint', 1);
         return;
       }
-      return;
+      if (key === 'S') {
+        this.seq = [];
+        this.count = '';
+        this.suppressKeyUp = true;
+        this.suppressRepeat = true;
+        this.consume(event);
+        this.dispatch('selectScroll', 1);
+        return;
+      }
+      if (this.modes.mode !== 'scroll') return;
     }
 
     if ((/^[1-9]$/u.test(key) || (this.count.length > 0 && /^\d$/u.test(key))) && !this.seq.length) {
@@ -165,14 +185,27 @@ export class KeyEventPipeline {
     this.seq.push(key);
     const match = this.trie.match(this.seq);
     if (match.command) {
+      const isScrollCmd = SCROLL_COMMANDS.has(match.command);
+      if (this.modes.mode === 'normal' && isScrollCmd) {
+        this.seq = [];
+        this.count = '';
+        return;
+      }
+      if (this.modes.mode === 'scroll' && !isScrollCmd && match.command !== 'selectScroll') {
+        this.seq = [];
+        this.count = '';
+        return;
+      }
       const count = Number(this.count) || 1;
-      this.seq = []; this.count = '';
+      this.seq = [];
+      this.count = '';
       this.suppressKeyUp = true;
       this.suppressRepeat = !repeatableCommands.has(match.command);
       this.consume(event);
       this.dispatch(match.command, count);
     } else if (!match.prefix) {
-      this.seq = []; this.count = '';
+      this.seq = [];
+      this.count = '';
     }
   };
 }

@@ -4,7 +4,7 @@ export class HudComponent {
   private findInput: HTMLInputElement | undefined;
   private findCallbacks: { input: (query: string) => void; commit: () => void; cancel: () => void } | undefined;
   constructor(root: ShadowRoot) {
-    this.element = document.createElement('div'); this.element.className = 'hud'; this.element.setAttribute('role', 'status'); this.element.hidden = true; root.append(this.element);
+    this.element = document.createElement('div'); this.element.id = 'hud'; this.element.className = 'hud'; this.element.setAttribute('role', 'status'); this.element.hidden = true; root.append(this.element);
   }
   show(message: string, duration = 1200): void {
     window.clearTimeout(this.timer); this.element.textContent = message; this.element.hidden = false;

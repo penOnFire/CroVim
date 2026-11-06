@@ -93,6 +93,7 @@ if (win.__CROVIM_INITIALIZED__) {
           if (modes.mode === 'link-hints') modes.exit();
           const target = (selectedEl === document.documentElement || selectedEl === document.body) ? window : selectedEl;
           scroller.setExplicitTarget(target);
+          modes.enter('scroll');
           if (target instanceof HTMLElement) {
             const prevOutline = target.style.outline;
             const prevTransition = target.style.transition;
@@ -106,13 +107,16 @@ if (win.__CROVIM_INITIALIZED__) {
               || target.id
               || target.className.toString().split(' ')[0]
               || target.tagName.toLowerCase();
-            hud.show(`Scroll target: <${name}>`);
+            hud.show(`Scroll target: <${name}> (scrolling active: j/k/d/u/gg/G, Esc to exit)`, 2000);
           } else {
-            hud.show('Scroll target: Window');
+            hud.show('Scroll target: Window (scrolling active: j/k/d/u/gg/G, Esc to exit)', 2000);
           }
         },
       );
       modes.onCleanup('link-hints', () => hints.close());
+      modes.onCleanup('scroll', () => {
+        scroller.setExplicitTarget(null);
+      });
     }, { signal });
     window.addEventListener('pointermove', (event) => {
       scroller.setLastPointer(event.clientX, event.clientY);
