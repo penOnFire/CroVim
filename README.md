@@ -8,8 +8,10 @@ CroVim targets a unified Manifest V3 specification compatible across both Chromi
 
 CroVim treats keyboard navigation as an additional way to use the browser, not as a replacement for browser controls:
 
+- **Minimal non-intercepting mode by default:** By default, CroVim runs in Minimal mode (`minimalMode: true`). It never intercepts single-key website shortcuts (`j`, `k`, `h`, `l`, `d`, `u`, `s`, `q`, numbers `1-9`, `/`, etc.), guaranteeing 100% compatibility with sites like GitHub, YouTube, Gmail, and Twitter/X. CroVim only activates on explicit chords: `Shift+F` (link hints) and `Shift+Q` (hover hints), while `Escape` blurs active editables. Users who want full Vim page motions can turn off Minimal mode in Options.
+- **Physical Shift & CapsLock isolation:** CapsLock state is isolated so CapsLock alone never activates uppercase commands (`F`, `Q`, `G`, etc.). CroVim checks physical modifier state, requiring physical `Shift` to trigger shifted actions.
 - **Cross-browser by design:** A single unified build runs smoothly on Firefox, Brave, Chrome, Edge, and Arc without platform forks.
-- **Vim-style motions:** Use short keys and sequences to scroll, search, select links, and move between tabs.
+- **Vim-style motions:** When full navigation mode is enabled, use short keys and sequences to scroll, search, select links, and move between tabs.
 - **Browser shortcuts remain untouched:** Key combinations containing Ctrl, Alt, or Meta are passed directly to the browser. Commands such as `Ctrl+1`–`Ctrl+9`, `Ctrl+T`, `Ctrl+W`, and `Ctrl+R` are never intercepted.
 - **Text editing stays natural:** Navigation mappings are inactive while any text editor, form control, or `contenteditable` element has focus. `i` enters Insert mode, and `Escape` blurs editable elements and returns to Normal mode.
 - **Works on dynamic single-page applications:** Hint discovery scans the live DOM and open Shadow DOM trees on demand, allowing full link navigation on client-rendered web apps such as YouTube, Facebook, GitHub, and Instagram.
@@ -32,7 +34,7 @@ These are the default mappings in `src/shared/settings-schema.ts`. Sequences are
 | `F` (`Shift+F`) | Open link hints; selecting a candidate activates it in the current tab. Supports complex interactive controls, social reaction docks (e.g. Facebook Like/Love/Haha), modal buttons, and links. Lowercase `f` is unbound. |
 | `gf` | Open link hints; selecting a link opens it in a new tab. Other hinted controls are activated on the current page. |
 | `yf` | Open link hints; selecting a link copies its URL. |
-| `q` / `gh` | Hover hint. Triggers realistic pointer/mouse hover on an element (e.g. hovering over the Facebook Like button to reveal the reaction dock, or preview popups) without clicking. |
+| `Q` (`Shift+Q`) / `gh` | Hover hint. Triggers realistic pointer/mouse hover on an element (e.g. hovering over the Facebook Like button to reveal the reaction dock, or preview popups) without clicking. Lowercase `q` is unbound to preserve web app shortcuts. |
 | `/` | Open in-page find. Type a query, press Enter to finish, or Escape to cancel. |
 | `n` / `N` | Move to the next / previous find match. Find wraps at either end. |
 | `o` | Open the Vomnibar for tabs, history, bookmarks, or web search. Selecting a result opens it in the current tab; Shift+Enter opens it in a background tab. |

@@ -1,11 +1,25 @@
 import { test, expect } from './extension-fixtures';
 
-test('content script exposes hints, help, find, text input Escape, and scrolling controls', async ({ context }) => {
+test('content script in minimal mode handles Shift+F, Shift+Q, Escape, and preserves website shortcuts', async ({ context }) => {
   const page = await context.newPage();
   await page.goto('/rich.html');
   await page.waitForTimeout(250);
+
+  // Setup website keyboard shortcut listener to ensure events are delivered untouched
+  await page.evaluate(() => {
+    (window as any).siteKeys = [] as string[];
+    window.addEventListener('keydown', (e) => {
+      (window as any).siteKeys.push(e.key);
+    });
+  });
+
+  // Verify lowercase 'f' and 'q' pass through to the website and do NOT trigger CroVim hints
   await page.keyboard.press('f');
   await expect(page.locator('#crovim-ui-root').locator('.hint-label')).toHaveCount(0);
+  await page.keyboard.press('q');
+  await expect(page.locator('#crovim-ui-root').locator('.hint-label')).toHaveCount(0);
+
+  // Verify Shift+F activates link hints
   await page.keyboard.press('Shift+F');
   await expect(page.locator('#crovim-ui-root')).toBeAttached();
   await expect(page.locator('#crovim-ui-root').locator('.hint-label')).not.toHaveCount(0);
@@ -29,16 +43,22 @@ test('content script exposes hints, help, find, text input Escape, and scrolling
   await expect(labels).toHaveCount(0);
   await page.keyboard.press('Escape');
 
-  await page.keyboard.press('?');
-  const help = page.locator('#crovim-ui-root').locator('.help-dialog');
-  await expect(help).toBeVisible();
-  await help.press('Escape');
-  await page.keyboard.press('/');
-  const findInput = page.locator('#crovim-ui-root').locator('input[aria-label="Find in page"]');
-  await expect(findInput).toBeVisible();
-  await page.keyboard.type('Findable');
-  await expect(findInput).toHaveValue('Findable');
+  // Shift+Q triggers hover hint mode
+  await page.keyboard.press('Shift+Q');
+  await expect(page.locator('#crovim-ui-root').locator('.hint-label')).not.toHaveCount(0);
   await page.keyboard.press('Escape');
+  await expect(page.locator('#crovim-ui-root').locator('.hint-label')).toHaveCount(0);
+
+  // Verify website keyboard shortcuts (j, k, q, 1, ?, /) pass through untouched without interference
+  await page.keyboard.press('j');
+  await page.keyboard.press('k');
+  await page.keyboard.press('q');
+  await page.keyboard.press('1');
+  await page.keyboard.press('?');
+  await page.keyboard.press('/');
+
+  const receivedKeys = await page.evaluate(() => (window as any).siteKeys);
+  expect(receivedKeys).toEqual(expect.arrayContaining(['f', 'q', 'j', 'k', '1', '?', '/']));
 
   // Verify Chrome shortcuts like Ctrl+1..9 are never prevented by CroVim
   const ctrlDigitPrevented = await page.evaluate(() => {
@@ -47,9 +67,6 @@ test('content script exposes hints, help, find, text input Escape, and scrolling
     return ev.defaultPrevented;
   });
   expect(ctrlDigitPrevented).toBe(false);
-
-  await page.keyboard.press('j');
-  await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(0);
 });
 
 test('content script detects modal controls and clicks buttons inside modal dialogs', async ({ context }) => {
@@ -136,7 +153,13 @@ test('content script detects modal controls and clicks buttons inside modal dial
   await expect(page.locator('#test-modal-backdrop')).toHaveCount(0);
 });
 
-test('selects explicit scroll containers and activates social reaction flyouts', async ({ context }) => {
+test('selects explicit scroll containers and activates social reaction flyouts', async ({ context, extensionId }) => {
+  const optionsPage = await context.newPage();
+  await optionsPage.goto(`chrome-extension://${extensionId}/pages/options.html`);
+  await optionsPage.locator('input[name="minimalMode"]').uncheck();
+  await optionsPage.getByRole('button', { name: 'Save' }).click();
+  await optionsPage.close();
+
   const page = await context.newPage();
   await page.goto('/rich.html');
   await page.waitForTimeout(300);
@@ -230,8 +253,8 @@ test('selects explicit scroll containers and activates social reaction flyouts',
   expect(scrollPositions.sideTop).toBeGreaterThan(0);
   expect(scrollPositions.feedTop).toBe(0);
 
-  // 2. Test hover hint 'q' (or 'gh') to reveal Facebook reaction dock
-  await page.keyboard.press('q');
+  // 2. Test hover hint 'Shift+Q' (or 'gh') to reveal Facebook reaction dock
+  await page.keyboard.press('Shift+Q');
   await page.waitForTimeout(200);
 
   const likeHint = await page.evaluate(() => {

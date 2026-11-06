@@ -39,7 +39,7 @@ if (win.__CROVIM_INITIALIZED__) {
     const run = dispatcher(scroller, bus);
     const pipeline = new KeyEventPipeline(modes, new CommandTrie(settings.keyMappings), (command, count) => {
       void run(command, count).catch((error: unknown) => hud.show(error instanceof Error ? error.message : 'Command failed'));
-    }, bus, settings.passKeys);
+    }, bus, settings.passKeys, settings.minimalMode);
     win.__CROVIM_CLEANUP__ = () => {
       ac.abort();
       modes.exit();

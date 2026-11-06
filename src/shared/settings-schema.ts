@@ -6,7 +6,7 @@ const mappings: Record<string, string> = {
   d: 'halfPageDown', u: 'halfPageUp', gg: 'scrollTop', G: 'scrollBottom',
   zH: 'scrollLeftEdge', zL: 'scrollRightEdge',
   s: 'selectScroll', gs: 'selectScroll',
-  F: 'enterHints', gf: 'enterHintsNewTab', yf: 'yankHint', gh: 'hoverHint', q: 'hoverHint', '/': 'find',
+  F: 'enterHints', gf: 'enterHintsNewTab', yf: 'yankHint', gh: 'hoverHint', Q: 'hoverHint', '/': 'find',
   n: 'findNext', N: 'findPrevious', v: 'visual', V: 'visualLine',
   i: 'insert', m: 'setMark', '`': 'gotoMark', "'": 'gotoMark', o: 'vomnibar',
   O: 'vomnibarCurrent', t: 'newTab', T: 'newTabBackground',
@@ -21,7 +21,7 @@ const mappings: Record<string, string> = {
 };
 
 export const defaults = (): Settings => ({
-  schemaVersion: 1, keyMappings: { ...mappings }, passKeys: [],
+  schemaVersion: 1, minimalMode: true, keyMappings: { ...mappings }, passKeys: [],
   excludedPatterns: [], searchEngines: [
     { keyword: 'g', name: 'Google', url: 'https://www.google.com/search?q=%s' },
     { keyword: 'ddg', name: 'DuckDuckGo', url: 'https://duckduckgo.com/?q=%s' },
@@ -54,8 +54,12 @@ export function normalizeSettings(input: unknown): Settings {
   if (customMappings.f === 'enterHints') {
     delete customMappings.f;
   }
+  if (customMappings.q === 'hoverHint') {
+    delete customMappings.q;
+  }
   return {
     ...d, ...x, schemaVersion: 1,
+    minimalMode: typeof x.minimalMode === 'boolean' ? x.minimalMode : d.minimalMode,
     keyMappings: {
       ...d.keyMappings,
       ...customMappings,

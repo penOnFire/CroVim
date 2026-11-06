@@ -5,6 +5,7 @@ const lines = (value: string): string[] => value.split(/\r?\n/).map((line) => li
 export function settingsToForm(settings: Settings): Record<string, string | boolean> {
   return {
     scrollStep: String(settings.scrollStep), smoothScroll: settings.smoothScroll,
+    minimalMode: settings.minimalMode ?? true,
     hintCharacters: settings.hintCharacters, hintMode: settings.hintMode,
     findRegex: settings.findRegex, findSmartCase: settings.findSmartCase, theme: settings.theme,
     keyMappings: Object.entries(settings.keyMappings).map(([key, command]) => `${key}=${command}`).join('\n'),
@@ -14,8 +15,10 @@ export function settingsToForm(settings: Settings): Record<string, string | bool
 }
 
 export function formToSettings(form: HTMLFormElement): Partial<Settings> {
-  const value = (name: string): string => (form.elements.namedItem(name) as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement).value;
-  const checked = (name: string): boolean => (form.elements.namedItem(name) as HTMLInputElement).checked;
+  const value = (name: string): string =>
+    (form.elements.namedItem(name) as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null)?.value ?? '';
+  const checked = (name: string): boolean =>
+    (form.elements.namedItem(name) as HTMLInputElement | null)?.checked ?? false;
   const keyMappings: Record<string, string> = {};
   lines(value('keyMappings')).forEach((line) => {
     const split = line.indexOf('=');
@@ -29,6 +32,7 @@ export function formToSettings(form: HTMLFormElement): Partial<Settings> {
   });
   return {
     scrollStep: Number(value('scrollStep')), smoothScroll: checked('smoothScroll'),
+    minimalMode: checked('minimalMode'),
     hintCharacters: value('hintCharacters'), hintMode: value('hintMode') as Settings['hintMode'],
     findRegex: checked('findRegex'), findSmartCase: checked('findSmartCase'), theme: value('theme') as Settings['theme'],
     keyMappings, excludedPatterns: lines(value('excludedPatterns')), searchEngines,

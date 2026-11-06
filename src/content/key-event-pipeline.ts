@@ -29,12 +29,17 @@ export class KeyEventPipeline {
     private dispatch: (c: string, count: number) => void,
     private bus: EventTarget = document,
     passKeys: Iterable<string> = [],
+    private minimalMode: boolean = true,
   ) {
     this.passKeySet = new Set(passKeys);
     window.addEventListener('keydown', this.onKeyDown, this.options);
     window.addEventListener('keypress', this.onKeyPress, this.options);
     window.addEventListener('keyup', this.onKeyUp, this.options);
     window.addEventListener('blur', this.onBlur);
+  }
+
+  setMinimalMode(minimalMode: boolean): void {
+    this.minimalMode = minimalMode;
   }
 
   setTrie(trie: CommandTrie): void {
@@ -101,7 +106,19 @@ export class KeyEventPipeline {
       return;
     }
     if (event.repeat && this.suppressRepeat) { this.consume(event); return; }
-    const key = event.key;
+
+    const isShift = Boolean(event.shiftKey || (typeof event.getModifierState === 'function' && event.getModifierState('Shift')));
+    let key = event.key;
+    if (event.code === 'KeyF' || key.toLowerCase() === 'f') {
+      key = isShift ? 'F' : 'f';
+    } else if (event.code === 'KeyQ' || key.toLowerCase() === 'q') {
+      key = isShift ? 'Q' : 'q';
+    } else if (!isShift && /^[A-Z]$/u.test(key)) {
+      key = key.toLowerCase();
+    } else if (isShift && /^[a-z]$/u.test(key)) {
+      key = key.toUpperCase();
+    }
+
     const activeEditable = isEditable(event.target) || isEditable(getDeepActiveElement());
     if (key === 'Escape') {
       this.seq = []; this.count = '';
@@ -117,6 +134,29 @@ export class KeyEventPipeline {
       return;
     }
     if (this.modes.mode !== 'normal' || activeEditable) return;
+
+    if (this.minimalMode) {
+      if (key === 'F') {
+        this.seq = [];
+        this.count = '';
+        this.suppressKeyUp = true;
+        this.suppressRepeat = true;
+        this.consume(event);
+        this.dispatch('enterHints', 1);
+        return;
+      }
+      if (key === 'Q') {
+        this.seq = [];
+        this.count = '';
+        this.suppressKeyUp = true;
+        this.suppressRepeat = true;
+        this.consume(event);
+        this.dispatch('hoverHint', 1);
+        return;
+      }
+      return;
+    }
+
     if ((/^[1-9]$/u.test(key) || (this.count.length > 0 && /^\d$/u.test(key))) && !this.seq.length) {
       this.count += key;
       this.consume(event);

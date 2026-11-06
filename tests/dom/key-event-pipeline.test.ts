@@ -11,7 +11,7 @@ describe('key event pipeline', () => {
 
   it('maps Shift+F directly to enterHints and ignores lowercase f', () => {
     const dispatch = vi.fn();
-    pipeline = new KeyEventPipeline(new ModeManager(), new CommandTrie({ F: 'enterHints' }), dispatch);
+    pipeline = new KeyEventPipeline(new ModeManager(), new CommandTrie({ F: 'enterHints' }), dispatch, document, [], true);
     const lowerEvent = new KeyboardEvent('keydown', { key: 'f', bubbles: true, cancelable: true });
     window.dispatchEvent(lowerEvent);
     expect(dispatch).not.toHaveBeenCalled();
@@ -24,11 +24,76 @@ describe('key event pipeline', () => {
     expect(event.defaultPrevented).toBe(true);
   });
 
+  it('maps Shift+Q directly to hoverHint and ignores lowercase q in minimal mode', () => {
+    const dispatch = vi.fn();
+    pipeline = new KeyEventPipeline(new ModeManager(), new CommandTrie({ Q: 'hoverHint' }), dispatch, document, [], true);
+    const lowerEvent = new KeyboardEvent('keydown', { key: 'q', bubbles: true, cancelable: true });
+    window.dispatchEvent(lowerEvent);
+    expect(dispatch).not.toHaveBeenCalled();
+    expect(lowerEvent.defaultPrevented).toBe(false);
+
+    const event = new KeyboardEvent('keydown', { key: 'Q', shiftKey: true, bubbles: true, cancelable: true });
+    window.dispatchEvent(event);
+    window.dispatchEvent(new KeyboardEvent('keyup', { key: 'Q', bubbles: true, cancelable: true }));
+    expect(dispatch).toHaveBeenCalledWith('hoverHint', 1);
+    expect(event.defaultPrevented).toBe(true);
+  });
+
+  it('isolates CapsLock so CapsLock ON without Shift does NOT trigger, but CapsLock ON with Shift DOES trigger', () => {
+    const dispatch = vi.fn();
+    pipeline = new KeyEventPipeline(new ModeManager(), new CommandTrie({ F: 'enterHints', Q: 'hoverHint' }), dispatch, document, [], true);
+
+    const capsF = new KeyboardEvent('keydown', { key: 'F', code: 'KeyF', shiftKey: false, bubbles: true, cancelable: true });
+    Object.defineProperty(capsF, 'getModifierState', { value: (mod: string) => mod === 'CapsLock' });
+    window.dispatchEvent(capsF);
+    expect(dispatch).not.toHaveBeenCalled();
+    expect(capsF.defaultPrevented).toBe(false);
+
+    const capsQ = new KeyboardEvent('keydown', { key: 'Q', code: 'KeyQ', shiftKey: false, bubbles: true, cancelable: true });
+    Object.defineProperty(capsQ, 'getModifierState', { value: (mod: string) => mod === 'CapsLock' });
+    window.dispatchEvent(capsQ);
+    expect(dispatch).not.toHaveBeenCalled();
+    expect(capsQ.defaultPrevented).toBe(false);
+
+    const shiftCapsF = new KeyboardEvent('keydown', { key: 'F', code: 'KeyF', shiftKey: true, bubbles: true, cancelable: true });
+    Object.defineProperty(shiftCapsF, 'getModifierState', { value: (mod: string) => mod === 'CapsLock' || mod === 'Shift' });
+    window.dispatchEvent(shiftCapsF);
+    expect(dispatch).toHaveBeenCalledWith('enterHints', 1);
+    expect(shiftCapsF.defaultPrevented).toBe(true);
+
+    const shiftCapsQ = new KeyboardEvent('keydown', { key: 'Q', code: 'KeyQ', shiftKey: true, bubbles: true, cancelable: true });
+    Object.defineProperty(shiftCapsQ, 'getModifierState', { value: (mod: string) => mod === 'CapsLock' || mod === 'Shift' });
+    window.dispatchEvent(shiftCapsQ);
+    expect(dispatch).toHaveBeenCalledWith('hoverHint', 1);
+    expect(shiftCapsQ.defaultPrevented).toBe(true);
+  });
+
+  it('passes all website keys and digits through untouched in minimal mode without buffering counts', () => {
+    const dispatch = vi.fn();
+    pipeline = new KeyEventPipeline(new ModeManager(), new CommandTrie({
+      j: 'scrollDown', k: 'scrollUp', h: 'scrollLeft', l: 'scrollRight',
+      d: 'halfPageDown', u: 'halfPageUp', s: 'selectScroll', q: 'hoverHint',
+      r: 'reload', t: 'newTab', x: 'closeTab',
+    }), dispatch, document, [], true);
+
+    const websiteKeys = ['j', 'k', 'h', 'l', 'd', 'u', 's', 'q', 'r', 't', 'x', '1', '2', '5', '9', '/', '?'];
+    for (const key of websiteKeys) {
+      const ev = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true });
+      window.dispatchEvent(ev);
+      expect(ev.defaultPrevented).toBe(false);
+    }
+    expect(dispatch).not.toHaveBeenCalled();
+
+    const event = new KeyboardEvent('keydown', { key: 'F', shiftKey: true, bubbles: true, cancelable: true });
+    window.dispatchEvent(event);
+    expect(dispatch).toHaveBeenCalledWith('enterHints', 1);
+  });
+
   it('allows holding down j/k/h/l to repeat scroll commands without blocking', () => {
     const dispatch = vi.fn();
     pipeline = new KeyEventPipeline(new ModeManager(), new CommandTrie({
       j: 'scrollDown', k: 'scrollUp', h: 'scrollLeft', l: 'scrollRight',
-    }), dispatch);
+    }), dispatch, document, [], false);
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'j', repeat: false, bubbles: true, cancelable: true }));
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'j', repeat: true, bubbles: true, cancelable: true }));
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'j', repeat: true, bubbles: true, cancelable: true }));
@@ -52,11 +117,28 @@ describe('key event pipeline', () => {
     expect(modes.mode).toBe('normal');
   });
 
+  it('normalizes CapsLock in non-minimal mode so uppercase commands are not triggered without Shift', () => {
+    const dispatch = vi.fn();
+    pipeline = new KeyEventPipeline(new ModeManager(), new CommandTrie({
+      j: 'scrollDown', G: 'scrollBottom', F: 'enterHints',
+    }), dispatch, document, [], false);
+
+    const capsG = new KeyboardEvent('keydown', { key: 'G', code: 'KeyG', shiftKey: false, bubbles: true, cancelable: true });
+    Object.defineProperty(capsG, 'getModifierState', { value: (mod: string) => mod === 'CapsLock' });
+    window.dispatchEvent(capsG);
+    expect(dispatch).not.toHaveBeenCalledWith('scrollBottom', expect.anything());
+
+    const capsJ = new KeyboardEvent('keydown', { key: 'J', code: 'KeyJ', shiftKey: false, bubbles: true, cancelable: true });
+    Object.defineProperty(capsJ, 'getModifierState', { value: (mod: string) => mod === 'CapsLock' });
+    window.dispatchEvent(capsJ);
+    expect(dispatch).toHaveBeenCalledWith('scrollDown', 1);
+  });
+
   it('never intercepts Chrome shortcuts like Ctrl+1..9, Ctrl+T, Ctrl+R, Ctrl+X, Alt+1..9, or Meta+1..9', () => {
     const dispatch = vi.fn();
     pipeline = new KeyEventPipeline(new ModeManager(), new CommandTrie({
       j: 'scrollDown', t: 'newTab', r: 'reload', x: 'closeTab', d: 'halfPageDown', F: 'enterHints',
-    }), dispatch);
+    }), dispatch, document, [], false);
 
     for (let digit = 0; digit <= 9; digit++) {
       const ctrlDigit = new KeyboardEvent('keydown', { key: String(digit), ctrlKey: true, bubbles: true, cancelable: true });
