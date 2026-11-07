@@ -1,4 +1,54 @@
+const hoverIntervals = new Set<ReturnType<typeof setInterval>>();
+let hoveredElements = new Set<Element>();
+
+const eventInit = (clientX = 0, clientY = 0): MouseEventInit => ({
+  bubbles: true,
+  cancelable: true,
+  composed: true,
+  detail: 0,
+  clientX,
+  clientY,
+  screenX: (typeof window !== 'undefined' ? window.screenX ?? 0 : 0) + clientX,
+  screenY: (typeof window !== 'undefined' ? window.screenY ?? 0 : 0) + clientY,
+  buttons: 0,
+});
+
+export function unhover(): void {
+  for (const interval of hoverIntervals) clearInterval(interval);
+  hoverIntervals.clear();
+
+  const elements = [...hoveredElements];
+  hoveredElements = new Set();
+  const active = document.activeElement;
+  if (active && elements.some((element) => element === active || element.contains(active))) {
+    (active as HTMLElement).blur?.();
+  }
+
+  for (const element of elements) {
+    for (const type of ['pointerout', 'mouseout']) {
+      if (type === 'pointerout' && typeof PointerEvent !== 'function') continue;
+      const event = type === 'pointerout'
+        ? new PointerEvent(type, { ...eventInit(), pointerId: 1, pointerType: 'mouse', isPrimary: true })
+        : new MouseEvent(type, eventInit());
+      element.dispatchEvent(event);
+    }
+    for (const type of ['pointerleave', 'mouseleave']) {
+      if (type === 'pointerleave' && typeof PointerEvent !== 'function') continue;
+      const event = type === 'pointerleave'
+        ? new PointerEvent(type, { ...eventInit(), bubbles: false, pointerId: 1, pointerType: 'mouse', isPrimary: true })
+        : new MouseEvent(type, { ...eventInit(), bubbles: false });
+      element.dispatchEvent(event);
+    }
+  }
+
+  const move = typeof PointerEvent === 'function'
+    ? new PointerEvent('pointermove', { ...eventInit(), pointerId: 1, pointerType: 'mouse', isPrimary: true })
+    : new MouseEvent('pointermove', eventInit());
+  document.dispatchEvent(move);
+}
+
 export function activate(el: Element, mode: 'currTab' | 'newTab' | 'yank' | 'hover' = 'currTab'): void {
+  if (mode === 'currTab' || mode === 'newTab') unhover();
   if (mode === 'yank') {
     const url = el instanceof HTMLAnchorElement ? el.href : el.getAttribute('data-href') ?? '';
     if (url) void navigator.clipboard?.writeText(url);
@@ -84,12 +134,19 @@ export function activate(el: Element, mode: 'currTab' | 'newTab' | 'yank' | 'hov
   }
 
   if (mode === 'hover') {
+    hoveredElements = new Set<Element>();
+    let current: Element | null = dispatchTarget;
+    while (current) {
+      hoveredElements.add(current);
+      current = current.parentElement;
+    }
     // Keep hover presence active for 400ms to satisfy delayed hover timers (like Facebook reactions)
     let elapsed = 0;
     const interval = setInterval(() => {
       elapsed += 80;
       if (elapsed > 400) {
         clearInterval(interval);
+        hoverIntervals.delete(interval);
         return;
       }
       const moveEvent = hasPointer
@@ -97,6 +154,7 @@ export function activate(el: Element, mode: 'currTab' | 'newTab' | 'yank' | 'hov
         : new MouseEvent('pointermove', { ...mouseInit, detail: 0, buttons: 0 });
       dispatchTarget.dispatchEvent(moveEvent);
     }, 80);
+    hoverIntervals.add(interval);
     return;
   }
 

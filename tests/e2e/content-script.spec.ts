@@ -69,6 +69,58 @@ test('content script in minimal mode handles Shift+F, Shift+Q, Escape, and prese
   expect(ctrlDigitPrevented).toBe(false);
 });
 
+test('clicking after a hover hint dispatches leave events on the hovered element', async ({ context }) => {
+  const page = await context.newPage();
+  await page.goto('/rich.html');
+  await page.waitForTimeout(250);
+
+  await page.evaluate(() => {
+    const hovered = document.createElement('button');
+    hovered.id = 'hover-cleanup-target';
+    hovered.textContent = 'Hover target';
+    const clicked = document.createElement('button');
+    clicked.id = 'click-cleanup-target';
+    clicked.textContent = 'Click target';
+    document.body.prepend(hovered, clicked);
+    const events: string[] = [];
+    for (const type of ['pointerout', 'mouseout', 'pointerleave', 'mouseleave']) {
+      hovered.addEventListener(type, () => events.push(type));
+    }
+    (window as any).hoverCleanupEvents = events;
+  });
+
+  await page.keyboard.press('Shift+Q');
+  const hoverHint = await page.evaluate(() => {
+    const root = document.getElementById('crovim-ui-root');
+    const label = Array.from(root?.shadowRoot?.querySelectorAll('.hint-label') ?? [])
+      .find((item) => {
+        const rect = document.getElementById('hover-cleanup-target')?.getBoundingClientRect();
+        return rect
+          && Math.abs(parseFloat((item as HTMLElement).style.top) - rect.top) < 15
+          && Math.abs(parseFloat((item as HTMLElement).style.left) - rect.left) < 15;
+      });
+    return label?.textContent?.trim();
+  });
+  expect(hoverHint).toBeTruthy();
+  await page.keyboard.type(hoverHint!);
+
+  await page.keyboard.press('Shift+F');
+  const clickHint = await page.evaluate(() => {
+    const root = document.getElementById('crovim-ui-root');
+    const rect = document.getElementById('click-cleanup-target')?.getBoundingClientRect();
+    const label = Array.from(root?.shadowRoot?.querySelectorAll('.hint-label') ?? [])
+      .find((item) => rect
+        && Math.abs(parseFloat((item as HTMLElement).style.top) - rect.top) < 15
+        && Math.abs(parseFloat((item as HTMLElement).style.left) - rect.left) < 15);
+    return label?.textContent?.trim();
+  });
+  expect(clickHint).toBeTruthy();
+  await page.keyboard.type(clickHint!);
+
+  const events = await page.evaluate(() => (window as any).hoverCleanupEvents);
+  expect(events).toEqual(expect.arrayContaining(['pointerout', 'mouseout', 'pointerleave', 'mouseleave']));
+});
+
 test('content script detects modal controls and clicks buttons inside modal dialogs', async ({ context }) => {
   const page = await context.newPage();
   await page.goto('/rich.html');

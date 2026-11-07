@@ -229,6 +229,28 @@ describe('link hint activation', () => {
     expect(clicked).toBe(false);
   });
 
+  it('cleans up hover state before the next click activation', () => {
+    document.body.innerHTML = `
+      <div id="hover-parent"><button id="hovered">Hover me</button></div>
+      <button id="clicked">Click me</button>`;
+    const hovered = document.getElementById('hovered')!;
+    const clicked = document.getElementById('clicked')!;
+    visibleBox(hovered, 50, 50, 80, 30);
+    visibleBox(clicked, 100, 50, 80, 30);
+    const events: string[] = [];
+    for (const type of ['pointerout', 'mouseout', 'pointerleave', 'mouseleave']) {
+      hovered.addEventListener(type, () => { events.push(type); });
+    }
+
+    activate(hovered, 'hover');
+    activate(clicked);
+
+    expect(events).toEqual(expect.arrayContaining(['mouseout', 'mouseleave']));
+    if (typeof PointerEvent === 'function') {
+      expect(events).toEqual(expect.arrayContaining(['pointerout', 'pointerleave']));
+    }
+  });
+
   it('discovers scrollable containers and main window with discoverScrollable', () => {
     document.body.innerHTML = `
       <div id="sidebar" style="overflow-y: auto;">

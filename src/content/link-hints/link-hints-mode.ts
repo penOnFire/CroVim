@@ -1,7 +1,7 @@
 import { discover, type Candidate } from './hint-discovery';
 import { hintLabels } from './hint-labels';
 import { HintOverlay } from './hint-overlay';
-import { activate } from './activation';
+import { activate, unhover } from './activation';
 
 export class LinkHintsMode {
   private static readonly eventTypes: Array<keyof WindowEventMap> = ['keydown', 'keypress', 'keyup'];
@@ -17,7 +17,7 @@ export class LinkHintsMode {
       if (event.key.length === 1 || ['Escape', 'Backspace'].includes(event.key)) consume();
       return;
     }
-    if (event.key === 'Escape') { consume(); this.close(); return; }
+    if (event.key === 'Escape') { consume(); unhover(); this.close(); return; }
     if (event.key === 'Backspace') { consume(); this.typed = this.typed.slice(0, -1); this.render(); return; }
     if (event.key.length !== 1) return;
     consume();
